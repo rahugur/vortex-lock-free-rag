@@ -45,10 +45,13 @@ FetchContent_Declare(Catch2
 
 FetchContent_MakeAvailable(nlohmann_json spdlog httplib Catch2)
 
-# --- Forge core (submodule) ---
+# --- Forge core ---
 # Forge's core primitives: thread pool, MPSC queue, future/promise, etc.
-# We compile thread_pool.cpp and link the headers.
-set(FORGE_DIR ${CMAKE_SOURCE_DIR}/forge)
+FetchContent_Declare(forge
+    GIT_REPOSITORY https://github.com/rahugur/forge-lock-free.git
+    GIT_TAG main GIT_SHALLOW TRUE)
+FetchContent_MakeAvailable(forge)
+set(FORGE_DIR ${forge_SOURCE_DIR})
 
 add_library(forge-core STATIC
     ${FORGE_DIR}/src/core/thread_pool.cpp
