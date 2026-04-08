@@ -16,19 +16,6 @@ This project is a from-scratch C++17 RAG engine with:
 - A **5-stage RAG pipeline** with sub-millisecond orchestration overhead
 - **In-process integration with Forge** — a ReAct agent with native vector search, zero serialization
 
-### The E2E Story
-
-Vortex is Layer 2 of a four-layer AI infrastructure stack:
-
-```
-Layer 4: Applied Agent       — Agentic RCA (ReAct, Llama 3.3 70B)
-Layer 3: Agent Orchestration — Forge (lock-free, 25K sessions/sec)
-Layer 2: Inference & Search  — Vortex (this project)           ← YOU ARE HERE
-Layer 1: Model Training      — HDFS Log Anomaly (QLoRA, Llama 3.2)
-```
-
-The key demo is in `e2e/rag_agent/`: a **single C++ binary** that runs a Forge ReAct agent with Vortex-backed retrieval. No HTTP hop, no serialization, no Python overhead. The agent calls `knowledge_search`, which dispatches to Vortex's HNSW index in ~10ns (a function pointer call), searches millions of vectors in <1ms, and returns chunks for the agent to reason over.
-
 ---
 
 ## Results at a Glance
@@ -71,17 +58,17 @@ ef= 400   recall=0.96   latency=1.2ms   QPS=823
 
 ```
                               ┌─────────────────┐
-                              │   HTTP Client    │
+                              │   HTTP Client   │
                               └────────┬────────┘
                                        │ REST
-                              ┌────────▼────────┐
+                              ┌────────▼─────────┐
                               │   HTTP Server    │
                               │  POST /v1/query  │
                               │  POST /v1/index  │
                               │  POST /v1/search │
-                              └────────┬────────┘
+                              └────────┬─────────┘
                                        │
-                    ┌──────────────────▼──────────────────┐
+                    ┌──────────────────▼───────────────────┐
                     │        RAG Pipeline Controller       │
                     │                                      │
                     │  1. EMBED    query → vector   ~5ms   │
@@ -89,7 +76,7 @@ ef= 400   recall=0.96   latency=1.2ms   QPS=823
                     │  3. RERANK   reorder top-N    ~10ms  │
                     │  4. AUGMENT  build prompt     <1ms   │
                     │  5. GENERATE LLM call         ~200ms │
-                    └──────┬─────────┬────────┬───────────┘
+                    └──────┬─────────┬────────┬────────────┘
                            │         │        │
                     ┌──────▼──┐ ┌────▼────┐ ┌─▼───────────┐
                     │  HNSW   │ │Embedder │ │Batch        │
@@ -99,8 +86,8 @@ ef= 400   recall=0.96   latency=1.2ms   QPS=823
                     │ <1ms p99│ │         │ │             │
                     └─────────┘ └─────────┘ └─────────────┘
                            │         │        │
-            ┌──────────────▼─────────▼────────▼──────────────┐
-            │       Lock-Free Infrastructure (from Forge)     │
+            ┌──────────────▼─────────▼────────▼────────────────┐
+            │       Lock-Free Infrastructure (from Forge)      │
             │                                                  │
             │  MPSC Queue  │ ThreadPool  │ Future/Promise      │
             │  (Vyukov)    │ (work-steal)│ (lock-free)         │
@@ -111,13 +98,13 @@ ef= 400   recall=0.96   latency=1.2ms   QPS=823
 ### E2E Mode: Forge Agent + Vortex Retrieval
 
 ```
-┌─────────────── Single C++ Process ───────────────┐
+┌─────────────── Single C++ Process ─────────────────┐
 │                                                    │
 │  Forge ReAct Agent                                 │
 │    │                                               │
 │    ├─ LLM thinks → calls knowledge_search tool     │
-│    │   └─ Vortex: embed → HNSW → rerank → chunks  │
-│    │      (in-process, ~10ns dispatch, <1ms search) │
+│    │   └─ Vortex: embed → HNSW → rerank → chunks   │
+│    │      (in-process, ~10ns dispatch, <1ms search)│
 │    │                                               │
 │    ├─ LLM thinks → calls knowledge_search again    │
 │    │   └─ Vortex: multi-hop retrieval              │
