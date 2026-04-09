@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-release:
+    name: Release Build & Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libssl-dev
+    
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja openssl@3
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build           -DCMAKE_BUILD_TYPE=Release           -DCMAKE_CXX_STANDARD=17           -DVORTEX_BUILD_E2E=ON           -G Ninja
+    
+    - name: Build
+      run: cmake --build build -j
+    
+    - name: Test
+      working-directory: build
+      run: ctest --output-on-failure -j
+    
+    - name: Run HNSW benchmark
+      working-directory: build
+      run: |
+        if [ -f tests/benchmark/bench_hnsw ]; then
+          ./tests/benchmark/bench_hnsw --size 10000 --dim 128
+        fi
+
+  tsan:
+    name: ThreadSanitizer
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libssl-dev clang
+    
+    - name: Configure with TSAN
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        cmake -B build-tsan           -DCMAKE_BUILD_TYPE=Debug           -DCMAKE_CXX_FLAGS="-fsanitize=thread -g -O1 -fno-omit-frame-pointer"           -DCMAKE_CXX_STANDARD=17           -DVORTEX_BUILD_E2E=ON           -G Ninja
+    
+    - name: Build with TSAN
+      run: cmake --build build-tsan -j
+    
+    - name: Run tests under TSAN
+      working-directory: build-tsan
+      env:
+        TSAN_OPTIONS: "halt_on_error=1:second_deadlock_stack=1"
+      run: ctest --output-on-failure -j
+
+  asan:
+    name: AddressSanitizer + UBSan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libssl-dev clang
+    
+    - name: Configure with ASAN
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        cmake -B build-asan           -DCMAKE_BUILD_TYPE=Debug           -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -g -O1 -fno-omit-frame-pointer"           -DCMAKE_CXX_STANDARD=17           -DVORTEX_BUILD_E2E=ON           -G Ninja
+    
+    - name: Build with ASAN
+      run: cmake --build build-asan -j
+    
+    - name: Run tests under ASAN
+      working-directory: build-asan
+      env:
+        ASAN_OPTIONS: "halt_on_error=1:detect_leaks=1"
+        UBSAN_OPTIONS: "halt_on_error=1"
+      run: ctest --output-on-failure -j
+
+  concurrent-stress:
+    name: Concurrent Stress Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build libssl-dev
+    
+    - name: Build Release
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+        cmake --build build -j
+    
+    - name: Run concurrent insert/search stress
+      working-directory: build
+      run: |
+        # Run stress tests multiple times to catch races
+        for i in 1 2 3; do
+          echo "=== Stress run $i ==="
+          ctest -R "stress|concurrent" --output-on-failure || exit 1
+        done
