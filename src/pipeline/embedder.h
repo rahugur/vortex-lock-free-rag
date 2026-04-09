@@ -5,6 +5,7 @@
 // APIEmbedder: calls an OpenAI-compatible embedding API.
 // MockEmbedder: returns deterministic vectors for testing.
 
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
