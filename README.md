@@ -1,5 +1,9 @@
 # Vortex — Lock-Free RAG Inference Engine
 
+[![CI](https://github.com/rahugur/vortex-lock-free-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/rahugur/vortex-lock-free-rag/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
+
 > A high-performance C++17 retrieval-augmented generation engine that unifies vector search, request batching, and streaming RAG into a single lock-free pipeline. Built on [Forge's](https://github.com/[YOUR_HANDLE]/forge-lock-free) concurrency primitives — proving they're a general-purpose toolkit, not one-off code.
 
 ---
