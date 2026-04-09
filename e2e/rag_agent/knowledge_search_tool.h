@@ -37,7 +37,7 @@ inline void register_knowledge_search(
         "Returns the most relevant text chunks with relevance scores. "
         "Use this whenever you need factual information to answer a question. "
         "You can call this multiple times with different queries for multi-hop retrieval.";
-    spec.parameters = forge::Json::parse(R"({
+    spec.parameters = vortex::Json::parse(R"({
         "type": "object",
         "properties": {
             "query": {
