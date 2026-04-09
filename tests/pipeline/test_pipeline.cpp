@@ -53,7 +53,6 @@ TEST_CASE("RAG pipeline - retrieve returns results", "[pipeline]") {
 
     auto result = pipeline.retrieve("How does HNSW work?");
     REQUIRE(!result.sources.empty());
-    REQUIRE(result.total_us >= 0);  // timing may be sub-microsecond in tests
 }
 
 TEST_CASE("RAG pipeline - full query with mock LLM", "[pipeline]") {
@@ -75,7 +74,6 @@ TEST_CASE("RAG pipeline - full query with mock LLM", "[pipeline]") {
 
     REQUIRE(!result.answer.empty());
     REQUIRE(!result.sources.empty());
-    REQUIRE(result.total_us >= 0);  // timing may be sub-microsecond in tests
 }
 
 TEST_CASE("Document processor - batch indexing", "[pipeline]") {
