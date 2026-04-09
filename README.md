@@ -32,7 +32,7 @@ All benchmarks on Apple Silicon (M-series), single process, mock LLM/embedding b
 | **HNSW search (100K, 128-dim, ef=400)** | ~1.2 ms, 823 QPS, **recall@10 = 0.96** |
 | **HNSW recall@10 (5K, 32-dim)** | **0.99** |
 | **SIMD distance (128-dim L2)** | **~10 ns/call** (NEON) |
-| **RAG pipeline retrieval (10K, 8 threads)** | 92 us avg, **83K QPS** |
+| **RAG pipeline retrieval (10K, 8 threads)** | 92 us avg, **10.9K QPS** |
 | **RAG pipeline overhead** | <1 ms per query |
 | **Full RAG (with 50ms mock LLM)** | 50.9 ms/query (pipeline adds <1ms) |
 | **Memory per vector (128-dim)** | ~837 bytes (incl. graph) |
