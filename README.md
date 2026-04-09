@@ -34,6 +34,8 @@ All benchmarks on Apple Silicon (M-series), single process, mock LLM/embedding b
 | **Memory per vector (128-dim)** | ~837 bytes (incl. graph) |
 | **Deployment** | 1 binary, ~8 MB |
 
+Measured on Apple M2, compiled with -O3, includes load/store.
+
 ### HNSW Recall vs Throughput (100K vectors, 128-dim random)
 
 ```
